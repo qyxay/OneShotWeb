@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneShot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #111111;
+            color: #eeeeee;
+            font-family: serif;
+        }
+        .text {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .letter-link {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .letter-link a {
+            color: #eee;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+        .letter-link a:hover {
+            color: #fff;
+        }
+        input {
+            padding: 10px 16px;
+            width: 320px;
+            font-size: 18px;
+            background: transparent;
+            border: 1px solid #777;
+            color: #eee;
+            outline: none;
+            text-align: center;
+        }
+        input:focus {
+            border-color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="text" id="greeting">这位上帝，我能知晓你的名字吗？</div>
+    <input id="nameInput" type="text" placeholder="输入名字后按回车">
+    <script>
+        const input = document.getElementById('nameInput');
+        const greeting = document.getElementById('greeting');
+        // 读取本地缓存
+        const cachedName = localStorage.getItem('god_name');
+        if (cachedName) {
+            greeting.textContent = `你好，${cachedName}！`;
+            input.style.display = 'none';
+            // 显示信件链接
+            const letterDiv = document.createElement('div');
+            letterDiv.className = 'letter-link';
+            letterDiv.innerHTML = `这有给你的<a href="LetterForGod.html?god_name=${encodeURIComponent(cachedName)}">一封信</a>。`;
+            greeting.insertAdjacentElement('afterend', letterDiv);
+        }
+        // 回车跳转
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const god_name = input.value.trim();
+                if (!god_name) return;
+                // 存入本地存储，避免下次重复输入
+                localStorage.setItem('god_name', god_name);
+                // 编码后跳转
+                window.location.href = `LetterForGod.html?god_name=${encodeURIComponent(god_name)}`;
+            }
+        });
+    </script>
+</body>
+</html>
