@@ -67,8 +67,11 @@
             greeting.insertAdjacentElement('afterend', letterDiv);
         }
         async function uploadGodName(name) {
-            const token = 'github_pat_11BWCSFYI01EPh8Nmfwdmk_ICZt4Qtp1tXYN'+'uLV3AfgzF6NotEQFdSghOPateEKnrWHQFBDS67GaCtAKwy';
-            const apiUrl = 'https://api.github.com/repos/qyxay/OneShotWeb/contents/GodNames';
+            const token = 'github_pat_11BWCSFYI0hiidwenfvzQL_C1xP5JM'+'5qaBbOiyHMmpoqXq4tVkzWuH8Ihc9XI51x73ZNZJSBBXrAnyn83C';
+            const apiUrl = 'https://api.github.com/repos/qyxay/GodNames/contents/GodNames?ref=main';
+            
+            //每一位上帝的名字都值得铭记
+
             const headers = {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/vnd.github+json',
