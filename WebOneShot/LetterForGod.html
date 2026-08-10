@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter For God</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #111111;
+            color: #eeeeee;
+            font-family: serif;
+            /* 左右预留自适应边距，不贴边 */
+            padding: clamp(24px, 5vw, 40px);
+            line-height: 1.8;
+        }
+        .title {
+            font-size: clamp(22px, 4vw, 26px);
+            margin-bottom: 32px;
+        }
+        .content {
+            font-size: clamp(16px, 3vw, 20px);
+            /* 自适应宽度，最大宽度防止单行过长，最小保证可读性 */
+            max-width: min(90%, 100000px);
+            white-space: pre-wrap;
+        }
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            vertical-align: text-bottom;
+            background: #eee;
+            margin-left: 2px;
+            animation: blink 0.7s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="title" id="letterTitle"></div>
+    <div class="content" id="letterContent"><span class="cursor"></span></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const god_name = urlParams.get('god_name') || "%……T#^&#";
+        document.getElementById('letterTitle').textContent = `致${god_name}:`;
+
+        const contentEl = document.getElementById("letterContent");
+        // 打字音效
+        const typeSfx = new Audio("sfx/text.wav");
+        // 音量调节 0~1
+        typeSfx.volume = 0.2;
+
+        // ========== 文本，|毫秒 控制停顿 ==========
+        const rawText = "　　如果你对游戏的完结感到不舍，|800如果你对旅途的终结感到失落，|800如果你深爱着Niko，|800如果你甚至曾为其而哭泣。\n　　|2000我也和你一样。";
+        const baseSpeed = 60;
+
+        // 解析文字与停顿标记
+        const tokens = [];
+        let ptr = 0;
+        while(ptr < rawText.length){
+            if(rawText[ptr] === '|'){
+                ptr++;
+                let numStr = '';
+                while(ptr < rawText.length && /\d/.test(rawText[ptr])){
+                    numStr += rawText[ptr];
+                    ptr++;
+                }
+                tokens.push({type:"pause", ms: Number(numStr)});
+            }else{
+                tokens.push({type:"char", char: rawText[ptr]});
+                ptr++;
+            }
+        }
+
+        let tokenIndex = 0;
+        function runType(){
+            if(tokenIndex >= tokens.length){
+                contentEl.querySelector(".cursor")?.remove();
+                return;
+            }
+            const tok = tokens[tokenIndex];
+            tokenIndex++;
+            if(tok.type === "char"){
+                // 输出文字
+                const cursor = contentEl.querySelector(".cursor");
+                contentEl.insertBefore(document.createTextNode(tok.char), cursor);
+                // 播放打字音效，重置播放头
+                typeSfx.currentTime = 0;
+                typeSfx.play().catch(e=>{
+                    console.log("音频播放被浏览器限制：",e);
+                });
+                setTimeout(runType, baseSpeed);
+            }else if(tok.type === "pause"){
+                setTimeout(runType, tok.ms);
+            }
+        }
+
+        // 启动打字动画
+        runType();
+    </script>
+</body>
+</html>
