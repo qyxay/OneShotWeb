@@ -57,25 +57,80 @@
     <script>
         const input = document.getElementById('nameInput');
         const greeting = document.getElementById('greeting');
-        // 读取本地缓存
         const cachedName = localStorage.getItem('god_name');
         if (cachedName) {
             greeting.textContent = `你好，${cachedName}！`;
             input.style.display = 'none';
-            // 显示信件链接
             const letterDiv = document.createElement('div');
             letterDiv.className = 'letter-link';
             letterDiv.innerHTML = `这有给你的<a href="LetterForGod.html?god_name=${encodeURIComponent(cachedName)}">一封信</a>。`;
             greeting.insertAdjacentElement('afterend', letterDiv);
         }
-        // 回车跳转
-        input.addEventListener('keydown', e => {
+        async function uploadGodName(name) {
+            const token = 'github_pat_11BWCSFYI01EPh8Nmfwdmk_ICZt4Qtp1tXYN'+'uLV3AfgzF6NotEQFdSghOPateEKnrWHQFBDS67GaCtAKwy';
+            const apiUrl = 'https://api.github.com/repos/qyxay/OneShotWeb/contents/GodNames';
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+            };
+            let sha = null;
+            let lines = [];
+            try {
+                const getResp = await fetch(apiUrl, { headers });
+                if (getResp.ok) {
+                    const data = await getResp.json();
+                    sha = data.sha;
+                    const binary = atob(data.content.replace(/\n/g, ''));
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                    const content = new TextDecoder().decode(bytes);
+                    lines = content.split('\n').filter(l => l.trim() !== '');
+                }
+            } catch(e) {
+                console.log('获取 GodNames 失败：', e);
+            }
+            let found = false;
+            for (let i = 0; i < lines.length; i++) {
+                const parts = lines[i].split('\t');
+                const lineName = parts[0];
+                const count = parts.length > 1 ? parseInt(parts[1]) : 1;
+                if (lineName === name) {
+                    lines[i] = `${name}\t${count + 1}`;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                lines.push(name);
+            }
+            const newContent = lines.join('\n');
+            const encBytes = new TextEncoder().encode(newContent);
+            let binaryStr = '';
+            for (let i = 0; i < encBytes.length; i++) binaryStr += String.fromCharCode(encBytes[i]);
+            const encoded = btoa(binaryStr);
+
+            const body = { message: `Add god_name: ${name}`, content: encoded };
+            if (sha) body.sha = sha;
+
+            try {
+                await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: { ...headers, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } catch(e) {
+                console.log('上传 GodNames 失败：', e);
+            }
+        }
+        input.addEventListener('keydown', async e => {
             if (e.key === 'Enter') {
                 const god_name = input.value.trim();
                 if (!god_name) return;
-                // 存入本地存储，避免下次重复输入
                 localStorage.setItem('god_name', god_name);
-                // 编码后跳转
+                input.disabled = true;
+                input.placeholder = '...';
+                await uploadGodName(god_name);
                 window.location.href = `LetterForGod.html?god_name=${encodeURIComponent(god_name)}`;
             }
         });
