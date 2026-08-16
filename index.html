@@ -76,6 +76,8 @@
         const greeting = document.getElementById('greeting');
         const tipEl = document.getElementById('tip');
         const cachedName = localStorage.getItem('god_name');
+        // 替换为你自己的 Cloudflare Worker 访问地址
+        const WORKER_API = "https://xxx.yourname.workers.dev";
 
         if (cachedName) {
             greeting.textContent = `你好，${cachedName}！`;
@@ -89,23 +91,22 @@
         async function createSaveIssue(name) {
             tipEl.textContent = "正在提交记录...";
             try {
-                const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/issues`, {
+                const res = await fetch(WORKER_API, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/vnd.github+json"
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        title: `存档用户名字：${name}`,
-                        body: name
+                        name: name
                     })
                 });
-                if (!res.ok) throw new Error("仓库未开放外部提交Issues");
-                tipEl.textContent = "记录提交成功，正在跳转信件...";
+                const data = await res.json();
+                if (!data.success) throw new Error(data.msg);
+                tipEl.textContent = data.msg;
                 return true;
             } catch (err) {
                 console.error(err);
-                tipEl.textContent = "提交失败：仓库未允许访客创建Issues";
+                tipEl.textContent = "提交失败：" + err.message;
                 return false;
             }
         }
