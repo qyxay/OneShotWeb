@@ -49,7 +49,7 @@
         // 总会有人查看源代码
 
         const urlParams = new URLSearchParams(window.location.search);
-        const god_name = urlParams.get('god_name') || "%……T#^&#";
+        const god_name = urlParams.get('god_name') || "旅人";
         
         localStorage.setItem('god_name', god_name);
         document.getElementById('letterTitle').textContent = `致${god_name}:`;
@@ -76,11 +76,11 @@
             }
             return btoa(binaryStr);
         }
-        const code = xorEncrypt('pilgrimage', god_name);
+        const code = xorEncrypt('home', god_name);
 
         // 不论你如何知晓它，都没关系。
 
-        const rawText = "　　如果你对游戏的完结感到不舍，|800如果你对旅途的终结感到失落，|800如果你深爱着Niko，|800如果你甚至曾为其而哭泣。\n　　|2000......我也和你一样。\n　　|800 " + code + " ，你会用上它的。";
+        const rawText = "　　如果你对游戏的完结感到不舍，|800如果你对旅途的终结感到失落，|800如果你深爱着Niko，|800如果你甚至曾啜泣过。\n　　|2000......我也和你一样，一样，真的一样。\n　　|800 " + code + " ，你会用上它的。";
         
         // 如果你也想再次踏上旅途，来吧，来吧，我已走在前头了。
 

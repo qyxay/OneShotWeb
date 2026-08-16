@@ -1,0 +1,57 @@
+name: 保存用户名称到GodNames文件
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+jobs:
+  save_name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4
+
+      - name: 读取Issue内容并写入文件
+        run: |
+          # 获取提交的名字
+          USER_NAME="${{ github.event.issue.body }}"
+          FILE_PATH="GodNames"
+          # 创建文件（不存在则新建）
+          touch $FILE_PATH
+          # 读取现有全部行
+          CONTENT=$(cat $FILE_PATH)
+          NEW_LINES=()
+          FOUND=0
+          # 遍历每行做计数
+          while IFS= read -r line; do
+            if [[ -z "$line" ]]; then continue; fi
+            NAME=$(echo "$line" | cut -f1)
+            COUNT=$(echo "$line" | cut -f2 -s || echo 1)
+            if [[ "$NAME" == "$USER_NAME" ]]; then
+              NEW_COUNT=$((COUNT + 1))
+              NEW_LINES+=("$NAME	$NEW_COUNT")
+              FOUND=1
+            else
+              NEW_LINES+=("$line")
+            fi
+          done <<< "$CONTENT"
+          # 不存在则新增一行，初始计数1
+          if [[ $FOUND -eq 0 ]]; then
+            NEW_LINES+=("$USER_NAME	1")
+          fi
+          # 覆盖写入文件
+          printf "%s\n" "${NEW_LINES[@]}" > $FILE_PATH
+          # Git提交配置
+          git config --global user.name "OneShot Bot"
+          git config --global user.email "bot@github.com"
+          git add $FILE_PATH
+          git commit -m "自动存档：${USER_NAME}"
+          git push
+
+      - name: 关闭已处理的Issue
+        uses: octokit/request-action@v2.x
+        with:
+          route: PATCH /repos/${{ github.repository }}/issues/${{ github.event.issue.number }}
+          state: closed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

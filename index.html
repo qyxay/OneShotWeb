@@ -19,14 +19,14 @@
             background-color: #111111;
             color: #eeeeee;
             font-family: serif;
+            gap: 30px;
         }
         .text {
             font-size: 24px;
-            margin-bottom: 30px;
+            text-align: center;
         }
         .letter-link {
             font-size: 24px;
-            margin-bottom: 30px;
         }
         .letter-link a {
             color: #eee;
@@ -35,6 +35,12 @@
         }
         .letter-link a:hover {
             color: #fff;
+        }
+        .input-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
         }
         input {
             padding: 10px 16px;
@@ -49,15 +55,28 @@
         input:focus {
             border-color: #ccc;
         }
+        .tip {
+            font-size: 14px;
+            color: #aaa;
+            height: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="text" id="greeting">这位上帝，我能知晓你的名字吗？</div>
-    <input id="nameInput" type="text" placeholder="输入名字后按回车">
+    <div class="input-wrap">
+        <input id="nameInput" type="text" placeholder="输入名字后按回车">
+        <div class="tip" id="tip"></div>
+    </div>
+
     <script>
+        const OWNER = "qyxay";
+        const REPO = "OneShotWeb";
         const input = document.getElementById('nameInput');
         const greeting = document.getElementById('greeting');
+        const tipEl = document.getElementById('tip');
         const cachedName = localStorage.getItem('god_name');
+
         if (cachedName) {
             greeting.textContent = `你好，${cachedName}！`;
             input.style.display = 'none';
@@ -66,74 +85,42 @@
             letterDiv.innerHTML = `这有给你的<a href="LetterForGod.html?god_name=${encodeURIComponent(cachedName)}">一封信</a>。`;
             greeting.insertAdjacentElement('afterend', letterDiv);
         }
-        async function uploadGodName(name) {
-            const token = 'github_pat_11BWCSFYI0hiidwenfvzQL_C1xP5JM'+'5qaBbOiyHMmpoqXq4tVkzWuH8Ihc9XI51x73ZNZJSBBXrAnyn83C';
-            const apiUrl = 'https://api.github.com/repos/qyxay/GodNames/contents/GodNames?ref=main';
-            
-            //每一位上帝的名字都值得铭记
 
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28'
-            };
-            let sha = null;
-            let lines = [];
+        async function createSaveIssue(name) {
+            tipEl.textContent = "正在提交记录...";
             try {
-                const getResp = await fetch(apiUrl, { headers });
-                if (getResp.ok) {
-                    const data = await getResp.json();
-                    sha = data.sha;
-                    const binary = atob(data.content.replace(/\n/g, ''));
-                    const bytes = new Uint8Array(binary.length);
-                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                    const content = new TextDecoder().decode(bytes);
-                    lines = content.split('\n').filter(l => l.trim() !== '');
-                }
-            } catch(e) {
-                console.log('获取 GodNames 失败：', e);
-            }
-            let found = false;
-            for (let i = 0; i < lines.length; i++) {
-                const parts = lines[i].split('\t');
-                const lineName = parts[0];
-                const count = parts.length > 1 ? parseInt(parts[1]) : 1;
-                if (lineName === name) {
-                    lines[i] = `${name}\t${count + 1}`;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                lines.push(name);
-            }
-            const newContent = lines.join('\n');
-            const encBytes = new TextEncoder().encode(newContent);
-            let binaryStr = '';
-            for (let i = 0; i < encBytes.length; i++) binaryStr += String.fromCharCode(encBytes[i]);
-            const encoded = btoa(binaryStr);
-
-            const body = { message: `Add god_name: ${name}`, content: encoded };
-            if (sha) body.sha = sha;
-
-            try {
-                await fetch(apiUrl, {
-                    method: 'PUT',
-                    headers: { ...headers, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/issues`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/vnd.github+json"
+                    },
+                    body: JSON.stringify({
+                        title: `存档用户名字：${name}`,
+                        body: name
+                    })
                 });
-            } catch(e) {
-                console.log('上传 GodNames 失败：', e);
+                if (!res.ok) throw new Error("仓库未开放外部提交Issues");
+                tipEl.textContent = "记录提交成功，正在跳转信件...";
+                return true;
+            } catch (err) {
+                console.error(err);
+                tipEl.textContent = "提交失败：仓库未允许访客创建Issues";
+                return false;
             }
         }
+
         input.addEventListener('keydown', async e => {
             if (e.key === 'Enter') {
                 const god_name = input.value.trim();
-                if (!god_name) return;
-                localStorage.setItem('god_name', god_name);
+                if (!god_name) {
+                    tipEl.textContent = "请输入有效名称";
+                    return;
+                }
                 input.disabled = true;
-                input.placeholder = '...';
-                await uploadGodName(god_name);
+                input.placeholder = "处理中...";
+                localStorage.setItem('god_name', god_name);
+                await createSaveIssue(god_name);
                 window.location.href = `LetterForGod.html?god_name=${encodeURIComponent(god_name)}`;
             }
         });
